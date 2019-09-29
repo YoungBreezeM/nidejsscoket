@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        #login{width: 50%;height: 500px;background: aquamarine;margin:auto}
+    </style>
+</head>
+<body>
+<div id="login">
+    <form>
+        <p>输入用户名<input type="text" placeholder="请输入用户名" id="userName" name="userName"></p>
+        <p><input type="button" onclick="login()" value="确定"></p>
+    </form>
+</div>
+<script>
+    function login() {
+        if(!document.getElementById("userName").value){
+            alert("请输入用名");
+            return;
+        }
+        let url = "clientA.html?userName="+document.getElementById("userName").value;
+        window.open(url);
+    }
+
+</script>
+</body>
+</html>

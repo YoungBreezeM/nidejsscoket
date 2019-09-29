@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <style>
+        #main{width:100%;background: #d6faff}
+        #status{text-align: center;border: 1px solid red;}
+        #user{width: 30%;height: 45%;background: bisque;float: left;margin: 2%;}
+        #user p{width: 100%;height: 20%;background: aquamarine}
+        #tg{width:60%;height: 5%;background: aliceblue;float: left;margin:2%;margin-bottom: 0  }
+        #message{width: 60%;height: 70%;background: azure;float: left;margin: 2%;margin-top:0;}
+        #message ul{list-style: none}
+        #message ul span{border-bottom: 1px solid #ccc;display:block;text-indent: 2em}
+        #send{width: 8%;height: 6%;background: aquamarine;float: right;margin-right: 5%;}
+        #send button{width: 100%;height: 100%;background: aquamarine;border: none}
+        #info{width: 51%;height: 5%;background: #1f20ff;float:right;}
+        #info input{width: 100%;height: 100%}
+
+    </style>
+</head>
+<body>
+<div id="main">
+    <div id="status">
+        <P>状态：<span style="color: #1f20ff">正在连接...</span></P>
+    </div>
+    <div id="user">
+        <p class="prompt"> 用户登陆信息</p>
+        <p>用户名：<input type="text" value="" readonly></p>
+        <select style=" width:100%;height: 100%" size="3" id="target">
+        </select>
+    </div>
+    <div id="tg">
+        目标对象
+    </div>
+    <div id="message" style="overflow:scroll;overflow-x:auto;">
+      <ul>
+      </ul>
+    </div>
+    <div id="send">
+        <button onclick="send()">发送</button>
+    </div>
+    <div id="info">
+        <input id="cdd" type="text" placeholder="输入">
+    </div>
+</div>
+<script>
+    /*
+    * 模块自适应模块
+    * */
+    document.getElementById('main').style.height = window.innerHeight+"px";//主要模块自适应高度
+    /*
+    * 数据初始化
+    * **/
+    document.getElementById("user").children[1].children[0].value = window.location.search.split("=")[1];
+
+</script>
+<script>
+    if(window.WebSocket){//判度浏览器是否支持websocket
+        let ws = new WebSocket('ws://localhost:8080/');
+        let status = document.getElementById("status").children[0].children[0];
+        let users = document.getElementById('user').children[1].children[0].value;
+        let user = document.getElementById("user");
+        ws.onopen = function(e){
+            console.log("连接服务器成功");
+            status.innerHTML= "连接服务器成功" ;
+            status.style.color = "green";
+            if(users){//websocket 基于字符串传输
+                let info = JSON.stringify({user:users});
+                ws.send(info);
+            }
+        };
+        ws.onmessage = function(e){//文本传输监听
+            let data = JSON.parse(e.data);
+            // console.log(data);
+            if(data.user&&data.userList){
+                infoAdd(data.user,data.userList)
+            }else if(data.user&&data.message){
+                showMessage(data)
+            }
+        };
+        ws.onclose = function(e){
+            console.log("服务器关闭");
+            status.innerHTML= "服务器关闭" ;
+            status.style.color = "orange";
+        };
+        ws.onerror = function(){
+            console.log("连接出错");
+            status.innerHTML= "连接出错" ;
+            status.style.color = "red";
+        };
+
+        /*
+        * 发送消息模块
+        * */
+        function send() {//发送消息
+            if (check()){//检验发送信息是否为空
+                let users = document.getElementById('user').children[1].children[0].value;
+                let info = document.getElementById("cdd").value;
+                let target = document.getElementById("target").value;
+                if(target===users){
+                    alert("不可以给自己发信息");
+                    return;
+                }
+                ws.send(JSON.stringify({user:users,message:info,target:target}));
+            }
+        }
+    }
+    /*
+    * 拦截验证模块
+    * */
+    function check() {
+        let messages = document.getElementById('info').children[0].value;
+        if(!document.getElementById("target").value){
+            alert("请选者你要发送的目标对象");
+            return ;
+        }
+        if(!messages){//发送信息检验
+            alert("不可发送空信息");
+            return;
+        }
+        return true;
+    }
+    /*
+    * 登陆信息提示
+    * */
+    function infoAdd(userinfo,userList) {
+        user.children[0].innerHTML = userinfo+"已经登陆";
+        setTimeout(()=>{
+            user.children[0].innerHTML =""
+        },3000);
+        removeAllChild(user.children[2])
+        for(let i=0;i<userList.length;i++){
+            let node = document.createElement("option");
+            let cont = document.createTextNode(userList[i].user);
+            node.appendChild(cont);
+            user.children[2].appendChild(node);
+            /*
+             * tab 选项框模块
+             * */
+            user.children[2].children[i].onclick = function (e) {
+                document.getElementById('tg').innerHTML = "发送对象:"+this.innerHTML;
+                let message = document.getElementById("message").children[0];
+                removeAllChild(message);
+            }
+        }
+
+    }
+    function removeAllChild(div)  {//移除孩子节点
+        while(div.hasChildNodes()) //当div下还存在子节点时 循环继续
+        {
+            div.removeChild(div.firstChild);
+        }
+    }
+    /*
+    * 消息加载
+    * */
+    function showMessage(data) {
+        let message = document.getElementById("message").children[0];
+        let node=document.createElement("li"); //创建一个li节点
+        let bf = document.createElement("b");
+        let spanNode =document.createElement('span');
+        let asd=document.createTextNode(data.user+":");//定义创建文本节点
+        let spanText = document.createTextNode(data.message);
+        bf.appendChild(asd);
+        spanNode.appendChild(spanText);
+        node.appendChild(bf);
+        node.appendChild(spanNode); //把文本节点追加到li节点
+        message.appendChild(node);
+        document.getElementById('info').children[0].value="";//清空输入
+    }
+
+</script>
+</body>
+</html>
